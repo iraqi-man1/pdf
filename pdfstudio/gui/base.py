@@ -315,7 +315,9 @@ class ToolPage(QWidget):
         return self._tool
 
     def is_busy(self) -> bool:
-        return self._thread is not None and self._thread.isRunning()
+        # Busy until the result slot clears the reference. Checking isRunning() would report
+        # idle a moment early, while the success signal is still queued to the UI thread.
+        return self._thread is not None
 
     def shutdown(self) -> None:
         """Stop any running job and release files before the window closes."""
