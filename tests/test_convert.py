@@ -325,6 +325,39 @@ def test_office_to_pdf_xlsx_via_libreoffice(tmp_path):
     assert "Invoice total" in _page_text(output)
 
 
+def test_office_com_path_quits_word_and_maps_errors(tmp_path, monkeypatch):
+    """Mock-based check of the Windows COM branch, which cannot run on Linux."""
+    from unittest import mock
+
+    source = tmp_path / "letter.docx"
+    source.write_bytes(b"placeholder")
+    com_client = mock.MagicMock(name="win32com.client")
+    pythoncom = mock.MagicMock(name="pythoncom")
+    monkeypatch.setattr(convert, "_office_com_modules", lambda: (com_client, pythoncom))
+    monkeypatch.setattr(convert, "_office_app_registered", lambda app_key: app_key == "word")
+
+    word = mock.MagicMock(name="Word")
+    word.Documents.Open.return_value.SaveAs2.side_effect = lambda path, file_format: Path(path).write_bytes(b"%PDF-fake")
+    com_client.DispatchEx.return_value = word
+    output = tmp_path / "letter.pdf"
+    convert.office_to_pdf(source, output)
+
+    com_client.DispatchEx.assert_called_once_with("Word.Application")  # never attaches to an open Word
+    word.Documents.Open.return_value.SaveAs2.assert_called_once_with(str(output.resolve()), 17)
+    word.Quit.assert_called_once()
+    pythoncom.CoInitialize.assert_called_once()
+    pythoncom.CoUninitialize.assert_called_once()
+    assert output.read_bytes().startswith(b"%PDF")
+
+    failing = mock.MagicMock(name="Word failing")
+    failing.Documents.Open.side_effect = RuntimeError("document is locked")
+    com_client.DispatchEx.return_value = failing
+    with pytest.raises(PdfStudioError, match="Microsoft Word could not convert 'letter.docx'"):
+        convert.office_to_pdf(source, tmp_path / "other.pdf")
+    failing.Quit.assert_called_once()
+    assert not (tmp_path / "other.pdf").exists()
+
+
 def test_office_to_pdf_rejects_unknown_type(tmp_path):
     source = tmp_path / "notes.txt"
     source.write_text("plain", encoding="utf-8")
