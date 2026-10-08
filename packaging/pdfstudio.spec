@@ -14,7 +14,24 @@ a = Analysis(
     hiddenimports=hidden + ["win32com.client", "pytesseract"],
     hookspath=[],
     runtime_hooks=[],
-    excludes=["tkinter", "matplotlib", "IPython", "pytest"],
+    excludes=[
+        "tkinter",
+        "matplotlib",
+        "IPython",
+        "pytest",
+        # Large Qt modules that PDF Studio never uses.
+        "PySide6.QtWebEngineCore",
+        "PySide6.QtWebEngineWidgets",
+        "PySide6.QtWebEngineQuick",
+        "PySide6.QtQml",
+        "PySide6.QtQuick",
+        "PySide6.QtQuick3D",
+        "PySide6.QtQuickWidgets",
+        "PySide6.Qt3DCore",
+        "PySide6.QtMultimedia",
+        "PySide6.QtCharts",
+        "PySide6.QtDataVisualization",
+    ],
     noarchive=False,
 )
 pyz = PYZ(a.pure)

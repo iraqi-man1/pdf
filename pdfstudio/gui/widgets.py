@@ -255,8 +255,14 @@ class FileListPanel(QWidget):
             self._list.setDefaultDropAction(Qt.DropAction.MoveAction)
             self._list.model().rowsMoved.connect(lambda *_: self.changed.emit())
 
-        self._drop = DropArea("", "", "", "")
+        self._drop = DropArea("📂", "", "", "")
         self._drop.set_accepted_suffixes(tool.accepts)
+        single = tool.max_files == 1
+        self._drop.set_texts(
+            title=f"Drop {tool.input_label} {'file' if single else 'files'} here",
+            hint=f"Accepted: {', '.join(tool.accepts)}. You can also choose them from your computer.",
+            button_text="Choose a file" if single else "Choose files",
+        )
         self._drop.files_dropped.connect(self.add_paths)
         self._drop.browse_requested.connect(self.browse)
 
@@ -414,8 +420,8 @@ class FileListPanel(QWidget):
         self._drop.setVisible(not has_files)
         self._list.setVisible(has_files)
         self._clear_button.setEnabled(has_files)
-        if self._tool.max_files is not None and self._tool.max_files == 1:
-            self._add_button.setText("Choose another file")
+        if self._tool.max_files == 1:
+            self._add_button.setText("Choose another file" if has_files else "Choose a file")
         self._add_button.setVisible(self._tool.max_files != 1 or not has_files)
         if self._tool.max_files is not None and self._tool.max_files > 1:
             self._count_label.setText(f"{count} of up to {self._tool.max_files} files")
