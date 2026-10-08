@@ -136,7 +136,8 @@ def test_repair_summary_says_the_copy_is_repaired(sample_pdf, tmp_path):
 def test_ocr_options_list_languages_and_default_to_english(qapp, monkeypatch):
     monkeypatch.setattr(optimize, "ocr_languages", lambda: ["deu", "eng", "fra"])
     tool = OcrTool()
-    assert tool.build_options() is not None
+    tool._kept_options = tool.build_options()
+    assert tool._kept_options is not None
     assert tool.collect_options() == {"language": "eng", "dpi": 200}
 
     tool._language.setCurrentIndex(tool._language.findData("deu"))
@@ -151,7 +152,7 @@ def test_ocr_language_list_falls_back_to_english(qapp, monkeypatch):
 
     monkeypatch.setattr(optimize, "ocr_languages", broken_list)
     tool = OcrTool()
-    tool.build_options()
+    tool._kept_options = tool.build_options()
     assert tool._language.count() == 1
     assert tool.collect_options() == {"language": "eng", "dpi": 200}
 

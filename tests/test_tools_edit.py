@@ -42,8 +42,8 @@ def make_tool(qapp):
 
     def build(cls, path=None):
         tool = cls()
-        tool.build_editor()
-        tool.build_options()
+        tool._kept_editor = tool.build_editor()
+        tool._kept_options = tool.build_options()
         if path is not None:
             tool.on_files_changed([path])
         made.append(tool)
@@ -253,7 +253,8 @@ def test_edit_highlight_is_drawn(qapp, sample_pdf, tmp_path, make_tool):
     [output] = tool.run([sample_pdf], tool.collect_options(), tmp_path, no_progress)
     doc = pymupdf.open(output)
     try:
-        assert "Highlight" in [annot.type[1] for annot in doc[1].annots()]
+        # Highlights are drawn into the page content (see edit_ops._draw_highlight), so look for a filled shape.
+        assert any(drawing.get("fill") for drawing in doc[1].get_drawings())
     finally:
         doc.close()
 

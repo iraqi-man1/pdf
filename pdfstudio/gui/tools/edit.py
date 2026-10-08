@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from pdfstudio.core.edit_ops import HighlightItem, RedactItem, TextItem, apply_edits, hex_to_rgb
+from pdfstudio.core.edit_ops import HighlightItem, RedactItem, TextItem, hex_to_rgb
 from pdfstudio.core.errors import PdfStudioError
 from pdfstudio.core.files import safe_stem, unique_path
 from pdfstudio.core.pages import parse_page_ranges
@@ -267,6 +267,8 @@ class SignTool(CanvasTool):
     image_mark_label = "Signature"
     no_image_message = "Draw or upload a signature first."
     empty_message = "Place at least one signature by clicking on the page."
+    output_word = "signed"
+    working_text = "Signing the PDF"
 
     def __init__(self) -> None:
         super().__init__()
@@ -333,13 +335,6 @@ class SignTool(CanvasTool):
         finally:
             dialog.deleteLater()
 
-    def run(self, files, options, out_dir, progress):
-        source = Path(files[0])
-        progress(0, "Signing the PDF")
-        output = unique_path(out_dir, f"{safe_stem(source.stem)} - signed", ".pdf")
-        apply_edits(source, output, options["items"], progress=progress)
-        progress(100, "Saved")
-        return [output]
 
 
 # ------------------------------------------------------------- edit PDF
@@ -359,6 +354,8 @@ class EditPdfTool(CanvasTool):
     max_files = 1
     action_text = "Save changes"
     canvas_mode = "point"
+    output_word = "edited"
+    working_text = "Saving changes"
     temp_prefix = "pdfstudio-image-"
     image_name = "image"
     image_mark_color = EDIT_COLOR
@@ -516,6 +513,8 @@ class RedactTool(CanvasTool):
     action_text = "Redact and save"
     canvas_mode = "rect"
     empty_message = "Mark at least one area by dragging on the page."
+    output_word = "redacted"
+    working_text = "Redacting the PDF"
 
     def __init__(self) -> None:
         super().__init__()
@@ -559,14 +558,6 @@ class RedactTool(CanvasTool):
             self._count.setText(f"{count} area{'s' if count != 1 else ''} marked")
         self._remove.setEnabled(count > 0)
         self._clear.setEnabled(count > 0)
-
-    def run(self, files, options, out_dir, progress):
-        source = Path(files[0])
-        progress(0, "Redacting the PDF")
-        output = unique_path(out_dir, f"{safe_stem(source.stem)} - redacted", ".pdf")
-        apply_edits(source, output, options["items"], progress=progress)
-        progress(100, "Saved")
-        return [output]
 
 
 TOOLS = [PageNumbersTool, WatermarkTool, SignTool, EditPdfTool, RedactTool]

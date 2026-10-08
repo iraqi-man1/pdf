@@ -17,19 +17,18 @@ from pathlib import Path
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QImage, QPixmap
 from PySide6.QtWidgets import (
-    QDialog,
     QFileDialog,
     QHBoxLayout,
     QLabel,
     QLayout,
-    QPushButton,
     QSlider,
     QVBoxLayout,
     QWidget,
 )
 
-from pdfstudio.core.edit_ops import ImageItem
+from pdfstudio.core.edit_ops import ImageItem, apply_edits
 from pdfstudio.core.errors import PasswordRequiredError, PdfStudioError
+from pdfstudio.core.files import safe_stem, unique_path
 from pdfstudio.core.render import page_sizes
 from pdfstudio.gui import theme
 from pdfstudio.gui.base import Tool
@@ -139,6 +138,8 @@ class CanvasTool(Tool):
 
     max_files = 1
     canvas_mode = "rect"  # "rect" or "point": how the canvas starts
+    output_word = "edited"  # output is named "<stem> - <output_word>.pdf"
+    working_text = "Saving changes"
     temp_prefix = "pdfstudio-image-"
     image_name = "image"  # used in the change list and messages
     image_mark_color = theme.CATEGORY_COLORS["Edit"]
@@ -235,6 +236,14 @@ class CanvasTool(Tool):
 
     def collect_options(self) -> dict:
         return {"items": [entry.item for entry in self._entries]}
+
+    def run(self, files: list[Path], options: dict, out_dir: Path, progress) -> list[Path]:
+        source = Path(files[0])
+        progress(0, self.working_text)
+        output = unique_path(out_dir, f"{safe_stem(source.stem)} - {self.output_word}", ".pdf")
+        apply_edits(source, output, options["items"], progress=progress)
+        progress(100, "Saved")
+        return [output]
 
     def validate(self, files: list[Path], options: dict) -> str | None:
         error = super().validate(files, options)

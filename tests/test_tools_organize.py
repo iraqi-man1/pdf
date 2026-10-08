@@ -124,7 +124,7 @@ def test_merge_joins_files_in_order(qapp, sample_pdf, second_pdf, tmp_path) -> N
 
 def test_split_custom_ranges_make_correct_counts(qapp, five_pdf, tmp_path) -> None:
     tool = SplitTool()
-    tool.build_options()
+    tool._kept_options = tool.build_options()
     options = {"mode": "ranges", "ranges": "1-2; 3-5", "every": 1}
     assert tool.validate([five_pdf], options) is None
     outputs = tool.run([five_pdf], options, tmp_path / "out", no_progress)
@@ -135,7 +135,7 @@ def test_split_custom_ranges_make_correct_counts(qapp, five_pdf, tmp_path) -> No
 
 def test_split_every_n_pages_makes_correct_counts(qapp, five_pdf, tmp_path) -> None:
     tool = SplitTool()
-    tool.build_options()
+    tool._kept_options = tool.build_options()
     options = {"mode": "every", "ranges": "", "every": 2}
     outputs = tool.run([five_pdf], options, tmp_path / "out", no_progress)
     assert [len(page_numbers(path)) for path in outputs] == [2, 2, 1]
@@ -143,7 +143,7 @@ def test_split_every_n_pages_makes_correct_counts(qapp, five_pdf, tmp_path) -> N
 
 def test_split_every_page_on_its_own(qapp, five_pdf, tmp_path) -> None:
     tool = SplitTool()
-    tool.build_options()
+    tool._kept_options = tool.build_options()
     options = {"mode": "single", "ranges": "", "every": 1}
     outputs = tool.run([five_pdf], options, tmp_path / "out", no_progress)
     assert len(outputs) == 5
@@ -152,7 +152,7 @@ def test_split_every_page_on_its_own(qapp, five_pdf, tmp_path) -> None:
 
 def test_split_validate_rejects_bad_ranges_and_large_n(qapp, sample_pdf) -> None:
     tool = SplitTool()
-    tool.build_options()
+    tool._kept_options = tool.build_options()
     assert "does not exist" in tool.validate([sample_pdf], {"mode": "ranges", "ranges": "1-2; 9", "every": 1})
     message = tool.validate([sample_pdf], {"mode": "every", "ranges": "", "every": 9})
     assert message and "cannot be split" in message
@@ -172,7 +172,7 @@ def test_split_mode_shows_only_the_relevant_field(qapp) -> None:
 
 def test_split_collect_options_requires_ranges_in_custom_mode(qapp) -> None:
     tool = SplitTool()
-    tool.build_options()
+    tool._kept_options = tool.build_options()
     tool._mode.setCurrentIndex(0)
     tool._ranges.setText("   ")
     with pytest.raises(ValueError, match="page range"):
@@ -184,7 +184,7 @@ def test_split_collect_options_requires_ranges_in_custom_mode(qapp) -> None:
 
 def test_remove_drops_the_chosen_pages(qapp, sample_pdf, tmp_path) -> None:
     tool = RemovePagesTool()
-    tool.build_options()
+    tool._kept_options = tool.build_options()
     options = {"pages": "2"}
     assert tool.validate([sample_pdf], options) is None
     outputs = tool.run([sample_pdf], options, tmp_path / "out", no_progress)
@@ -195,13 +195,13 @@ def test_remove_drops_the_chosen_pages(qapp, sample_pdf, tmp_path) -> None:
 
 def test_remove_refuses_to_remove_every_page(qapp, sample_pdf) -> None:
     tool = RemovePagesTool()
-    tool.build_options()
+    tool._kept_options = tool.build_options()
     assert "at least one page" in tool.validate([sample_pdf], {"pages": "1-3"})
 
 
 def test_extract_keeps_the_chosen_pages_in_typed_order(qapp, sample_pdf, tmp_path) -> None:
     tool = ExtractPagesTool()
-    tool.build_options()
+    tool._kept_options = tool.build_options()
     options = {"pages": "3, 1"}
     outputs = tool.run([sample_pdf], options, tmp_path / "out", no_progress)
     assert outputs == [tmp_path / "out" / "sample - extracted.pdf"]
@@ -212,7 +212,7 @@ def test_extract_keeps_the_chosen_pages_in_typed_order(qapp, sample_pdf, tmp_pat
 @pytest.mark.parametrize("tool_class", [RemovePagesTool, ExtractPagesTool])
 def test_page_lists_reject_pages_that_do_not_exist(qapp, sample_pdf, tool_class) -> None:
     tool = tool_class()
-    tool.build_options()
+    tool._kept_options = tool.build_options()
     message = tool.validate([sample_pdf], {"pages": "9"})
     assert message is not None
     assert "does not exist" in message
@@ -220,7 +220,7 @@ def test_page_lists_reject_pages_that_do_not_exist(qapp, sample_pdf, tool_class)
 
 def test_empty_page_list_is_rejected_when_collecting(qapp) -> None:
     tool = ExtractPagesTool()
-    tool.build_options()
+    tool._kept_options = tool.build_options()
     with pytest.raises(ValueError, match="at least one page"):
         tool.collect_options()
 
@@ -230,7 +230,7 @@ def test_empty_page_list_is_rejected_when_collecting(qapp) -> None:
 
 def test_organize_reorder_delete_and_rotate(qapp, sample_pdf, tmp_path) -> None:
     tool = OrganizePdfTool()
-    tool.build_editor()
+    tool._kept_editor = tool.build_editor()
     tool.on_files_changed([sample_pdf])
     grid = tool._grid
     assert grid.page_total() == 3
@@ -260,7 +260,7 @@ def test_organize_reorder_delete_and_rotate(qapp, sample_pdf, tmp_path) -> None:
 
 def test_organize_keeps_edits_when_the_same_file_is_reported_again(qapp, sample_pdf) -> None:
     tool = OrganizePdfTool()
-    tool.build_editor()
+    tool._kept_editor = tool.build_editor()
     tool.on_files_changed([sample_pdf])
     tool._grid._list.item(0).setSelected(True)
     tool._grid.delete_selected()
@@ -271,7 +271,7 @@ def test_organize_keeps_edits_when_the_same_file_is_reported_again(qapp, sample_
 
 def test_organize_rejects_an_empty_page_list(qapp, sample_pdf) -> None:
     tool = OrganizePdfTool()
-    tool.build_editor()
+    tool._kept_editor = tool.build_editor()
     tool.on_files_changed([sample_pdf])
     tool._grid._list.selectAll()
     tool._grid.delete_selected()
@@ -282,7 +282,7 @@ def test_organize_rejects_an_empty_page_list(qapp, sample_pdf) -> None:
 
 def test_organize_clears_the_editor_when_no_file_is_left(qapp, sample_pdf) -> None:
     tool = OrganizePdfTool()
-    tool.build_editor()
+    tool._kept_editor = tool.build_editor()
     tool.on_files_changed([sample_pdf])
     tool.on_files_changed([])
     assert tool._grid.page_total() == 0
@@ -315,7 +315,7 @@ def test_organize_shows_a_notice_for_password_protected_files(qapp, tmp_path) ->
 
 def test_rotate_all_pages_quarter_turn(qapp, sample_pdf, tmp_path) -> None:
     tool = RotatePdfTool()
-    tool.build_options()
+    tool._kept_options = tool.build_options()
     options = {"angle": 90, "pages": None}
     assert tool.validate([sample_pdf], options) is None
     outputs = tool.run([sample_pdf], options, tmp_path / "out", no_progress)
@@ -327,7 +327,7 @@ def test_rotate_all_pages_quarter_turn(qapp, sample_pdf, tmp_path) -> None:
 
 def test_rotate_specific_pages_counter_clockwise(qapp, sample_pdf, tmp_path) -> None:
     tool = RotatePdfTool()
-    tool.build_options()
+    tool._kept_options = tool.build_options()
     options = {"angle": -90, "pages": "2"}
     outputs = tool.run([sample_pdf], options, tmp_path / "out", no_progress)
     doc = pymupdf.open(outputs[0])
@@ -346,7 +346,7 @@ def test_rotate_page_list_only_shows_for_specific_pages(qapp) -> None:
 
 def test_rotate_rejects_pages_that_do_not_exist(qapp, sample_pdf) -> None:
     tool = RotatePdfTool()
-    tool.build_options()
+    tool._kept_options = tool.build_options()
     message = tool.validate([sample_pdf], {"angle": 90, "pages": "9"})
     assert message is not None and "does not exist" in message
 
@@ -356,8 +356,8 @@ def test_rotate_rejects_pages_that_do_not_exist(qapp, sample_pdf) -> None:
 
 def test_crop_default_margins_are_rejected(qapp, sample_pdf) -> None:
     tool = CropPdfTool()
-    tool.build_editor()
-    tool.build_options()
+    tool._kept_editor = tool.build_editor()
+    tool._kept_options = tool.build_options()
     tool.on_files_changed([sample_pdf])
     options = tool.collect_options()
     assert options["box"] == (0.0, 0.0, 1.0, 1.0)
@@ -367,8 +367,8 @@ def test_crop_default_margins_are_rejected(qapp, sample_pdf) -> None:
 
 def test_crop_margins_produce_a_smaller_cropbox(qapp, sample_pdf, tmp_path) -> None:
     tool = CropPdfTool()
-    tool.build_editor()
-    tool.build_options()
+    tool._kept_editor = tool.build_editor()
+    tool._kept_options = tool.build_options()
     tool.on_files_changed([sample_pdf])
     for side in ("left", "top", "right", "bottom"):
         tool._margin_spins[side].setValue(10.0)
@@ -391,8 +391,8 @@ def test_crop_margins_produce_a_smaller_cropbox(qapp, sample_pdf, tmp_path) -> N
 
 def test_crop_drag_sets_margins_and_marks_the_canvas(qapp, sample_pdf) -> None:
     tool = CropPdfTool()
-    tool.build_editor()
-    tool.build_options()
+    tool._kept_editor = tool.build_editor()
+    tool._kept_options = tool.build_options()
     tool.on_files_changed([sample_pdf])
     tool._canvas.rect_drawn.emit(0, (0.2, 0.1, 0.8, 0.9))
     assert tool._margin_spins["left"].value() == pytest.approx(20.0)
@@ -413,7 +413,7 @@ def test_crop_drag_sets_margins_and_marks_the_canvas(qapp, sample_pdf) -> None:
 
 def test_crop_reset_button_clears_margins_and_marks(qapp, sample_pdf) -> None:
     tool = CropPdfTool()
-    tool.build_editor()
+    tool._kept_editor = tool.build_editor()
     panel = tool.build_options()
     tool.on_files_changed([sample_pdf])
     tool._margin_spins["top"].setValue(15.0)
@@ -426,8 +426,8 @@ def test_crop_reset_button_clears_margins_and_marks(qapp, sample_pdf) -> None:
 
 def test_crop_rejects_an_empty_kept_area(qapp, sample_pdf) -> None:
     tool = CropPdfTool()
-    tool.build_editor()
-    tool.build_options()
+    tool._kept_editor = tool.build_editor()
+    tool._kept_options = tool.build_options()
     tool.on_files_changed([sample_pdf])
     tool._margin_spins["left"].setValue(60.0)
     tool._margin_spins["right"].setValue(60.0)
@@ -440,7 +440,7 @@ def test_crop_rejects_an_empty_kept_area(qapp, sample_pdf) -> None:
 
 def test_crop_specific_pages_only_crops_those_pages(qapp, sample_pdf, tmp_path) -> None:
     tool = CropPdfTool()
-    tool.build_editor()
+    tool._kept_editor = tool.build_editor()
     panel = tool.build_options()
     panel.show()
     tool.on_files_changed([sample_pdf])
@@ -464,8 +464,8 @@ def test_crop_specific_pages_only_crops_those_pages(qapp, sample_pdf, tmp_path) 
 
 def test_crop_rejects_pages_that_do_not_exist(qapp, sample_pdf) -> None:
     tool = CropPdfTool()
-    tool.build_editor()
-    tool.build_options()
+    tool._kept_editor = tool.build_editor()
+    tool._kept_options = tool.build_options()
     tool.on_files_changed([sample_pdf])
     tool._margin_spins["left"].setValue(10.0)
     tool._scope.setCurrentIndex(1)
@@ -477,8 +477,8 @@ def test_crop_rejects_pages_that_do_not_exist(qapp, sample_pdf) -> None:
 
 def test_dispose_closes_the_canvas_document(qapp, sample_pdf) -> None:
     tool = CropPdfTool()
-    tool.build_editor()
-    tool.build_options()
+    tool._kept_editor = tool.build_editor()
+    tool._kept_options = tool.build_options()
     tool.on_files_changed([sample_pdf])
     assert tool._canvas.page_count == 3
     tool.dispose()

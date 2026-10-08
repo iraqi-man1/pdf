@@ -159,7 +159,7 @@ class OcrTool(Tool):
 
     def build_options(self) -> QWidget:
         try:
-            codes = list(ocr_languages())
+            codes = [code for code in ocr_languages() if code != "osd"]  # osd is orientation detection, not a language
         except Exception:  # noqa: BLE001 - a broken language list must not stop the page from opening
             codes = []
         if not codes:

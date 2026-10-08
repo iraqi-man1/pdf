@@ -187,8 +187,9 @@ def test_images_to_pdf_uses_a4_and_margin_from_the_widgets(open_page, tmp_path):
     picture.write_bytes(_picture_bytes((300, 200)))
     (output,) = tool.run([picture], options, tmp_path / "out", Progress())
     with pymupdf.open(output) as doc:
-        assert doc[0].rect.width == pytest.approx(595, abs=1)
-        assert doc[0].rect.height == pytest.approx(842, abs=1)
+        # A landscape picture gets a landscape A4 page, so it fills the page instead of shrinking.
+        assert doc[0].rect.width == pytest.approx(842, abs=1)
+        assert doc[0].rect.height == pytest.approx(595, abs=1)
 
 
 # ---------------------------------------------------------------- HTML to PDF

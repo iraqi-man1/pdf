@@ -74,7 +74,7 @@ def test_tool_page_builds_with_its_options(qapp, tool_class):
 
 def test_protect_collects_matching_passwords_and_permissions(qapp):
     tool = ProtectTool()
-    tool.build_options()
+    tool._kept_options = tool.build_options()
     tool._password.setText("pass1234")
     tool._confirm.setText("pass1234")
     tool._printing.setChecked(False)
@@ -87,7 +87,7 @@ def test_protect_collects_matching_passwords_and_permissions(qapp):
 
 def test_protect_rejects_mismatched_passwords_without_echoing_them(qapp):
     tool = ProtectTool()
-    tool.build_options()
+    tool._kept_options = tool.build_options()
     tool._password.setText("secret-one")
     tool._confirm.setText("secret-two")
     with pytest.raises(ValueError, match="The two passwords do not match.") as info:
@@ -99,7 +99,7 @@ def test_protect_rejects_mismatched_passwords_without_echoing_them(qapp):
 @pytest.mark.parametrize("password", ["", "abc"])
 def test_protect_rejects_short_or_empty_passwords(qapp, password):
     tool = ProtectTool()
-    tool.build_options()
+    tool._kept_options = tool.build_options()
     tool._password.setText(password)
     tool._confirm.setText(password)
     with pytest.raises(ValueError, match="at least 4 characters"):
@@ -108,7 +108,7 @@ def test_protect_rejects_short_or_empty_passwords(qapp, password):
 
 def test_protect_show_passwords_toggles_both_fields(qapp):
     tool = ProtectTool()
-    tool.build_options()
+    tool._kept_options = tool.build_options()
     tool._show.setChecked(True)
     assert tool._password.echoMode().name == "Normal"
     assert tool._confirm.echoMode().name == "Normal"
@@ -163,21 +163,21 @@ def test_protect_summary_does_not_repeat_the_password(sample_pdf, tmp_path):
 
 def test_unlock_needs_a_password_typed(qapp):
     tool = UnlockTool()
-    tool.build_options()
+    tool._kept_options = tool.build_options()
     with pytest.raises(ValueError, match="Type the password that opens this PDF."):
         tool.collect_options()
 
 
 def test_unlock_collects_the_typed_password(qapp):
     tool = UnlockTool()
-    tool.build_options()
+    tool._kept_options = tool.build_options()
     tool._password.setText(USER_PASSWORD)
     assert tool.collect_options() == {"password": USER_PASSWORD}
 
 
 def test_unlock_show_password_toggles_the_field(qapp):
     tool = UnlockTool()
-    tool.build_options()
+    tool._kept_options = tool.build_options()
     tool._show.setChecked(True)
     assert tool._password.echoMode().name == "Normal"
     tool._show.setChecked(False)
