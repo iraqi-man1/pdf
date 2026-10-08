@@ -61,6 +61,36 @@ packaging/                  PyInstaller spec and Windows build script
 Adding a tool: create a `Tool` subclass in a module under `pdfstudio/gui/tools/`, add it to that
 module's `TOOLS` list, and make sure the module is listed in `pdfstudio/gui/tools/__init__.py`.
 
+## Verified and not verified
+
+Verified on Linux with the automated suite (232 tests, run offscreen):
+
+* PDF operations: merge, split, page removal and extraction, reorder, rotate, crop, page numbers,
+  watermark, compress, repair, protect and unlock, image and text extraction. Rotated pages are
+  checked against rendered pixels on 0, 90, 180 and 270 degree pages.
+* Visual edits: text, images and signatures, highlights and redaction.
+* Conversions: JPG/PNG to PDF, PDF to JPG/PNG, PDF to Word, Excel and PowerPoint, HTML to PDF.
+  Office to PDF through LibreOffice, and OCR through Tesseract 5.3.
+* The GUI: home search, opening every tool, clicking Run, background progress, results, errors.
+* The PyInstaller bundle starts and runs (built on Linux).
+
+Not verified here, because they need Windows:
+
+* Word, Excel and PowerPoint to PDF through Microsoft Office (COM). Only the call sequence is
+  covered, by mock tests.
+* The Windows font, Tesseract and LibreOffice install paths.
+* The `.exe` itself. Build it with `packaging\build_windows.bat` and try the tools once.
+
+Known limitations:
+
+* Highlights are drawn into the page, so they cannot be edited later. PyMuPDF's highlight
+  annotations render with padding and would not line up with the chosen area.
+* Scanned PDFs converted to Word come out as page images. Run OCR PDF first.
+* PDF to PowerPoint slides are images, not editable text.
+* Arabic and other non-Latin text uses a system Unicode font, but text shaping (joining Arabic
+  letters) is not applied.
+* The app's interface is in English.
+
 ## Privacy
 
 PDF Studio has no network features. Files are read and written only on your computer.
