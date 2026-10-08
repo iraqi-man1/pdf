@@ -268,8 +268,9 @@ def images_to_pdf(
     ``page_size="fit"`` makes each page exactly the image size (96 px = 72 pt), so
     nothing is resampled. ``"a4"`` and ``"letter"`` scale the image to fit inside the
     page minus ``margin`` points, centred, keeping its aspect ratio; a landscape image
-    gets a landscape page. JPEG files are embedded unchanged when no conversion is
-    needed. Other formats, CMYK and 16-bit images are converted to RGB or grey first.
+    gets a landscape page. JPEG and PNG files are embedded unchanged when no conversion
+    is needed (no alpha, CMYK, 16-bit or EXIF rotation). Anything else is converted to
+    RGB or grey first: JPEG in, JPEG out at quality 95; other formats become PNG.
     """
     paths = [Path(item) for item in images]
     if not paths:
@@ -1056,7 +1057,7 @@ def _libreoffice_convert(soffice: str, source: Path, target: Path, progress: Pro
 
         produced = outdir / f"{source.stem}.pdf"
         if not produced.is_file():
-            detail = _last_line(stderr or stdout)
+            detail = _last_line((stderr or stdout or b"").decode("utf-8", errors="replace"))
             raise PdfStudioError(
                 f"LibreOffice could not convert '{source.name}'." + (f" {detail}" if detail else "")
             )
@@ -1066,8 +1067,7 @@ def _libreoffice_convert(soffice: str, source: Path, target: Path, progress: Pro
         shutil.rmtree(work, ignore_errors=True)
 
 
-def _last_line(data: bytes | None) -> str:
-    text = (data or b"").decode("utf-8", errors="replace")
+def _last_line(text: str) -> str:
     lines = [line.strip() for line in text.splitlines() if line.strip()]
     return lines[-1][:200] if lines else ""
 
@@ -1206,7 +1206,9 @@ def _ocr_page_pdf(
         try:
             return bytes(pytesseract.image_to_pdf_or_hocr(str(image_path), extension="pdf", lang=language))
         except Exception as exc:
-            raise PdfStudioError(f"Tesseract could not read page {page_number}. {exc}") from exc
+            # The raw message is in args; str(exc) would repr-escape the quotes inside it.
+            message = " ".join(str(arg) for arg in exc.args) or str(exc)
+            raise _tesseract_error(page_number, message) from exc
 
     out_base = work / image_path.stem
     command = [tesseract, str(image_path), str(out_base), "-l", language, "pdf"]
@@ -1224,13 +1226,20 @@ def _ocr_page_pdf(
         raise PdfStudioError(f"Tesseract could not be started. {exc}") from exc
     pdf_file = Path(f"{out_base}.pdf")
     if completed.returncode != 0 or not pdf_file.is_file():
-        detail = _last_line(completed.stderr)
-        raise PdfStudioError(
-            f"Tesseract could not read page {page_number}."
-            + (f" {detail}" if detail else "")
-            + (f" Check that the language '{language}' is installed." if "language" in detail.lower() else "")
-        )
+        raise _tesseract_error(page_number, completed.stderr or completed.stdout)
     return pdf_file.read_bytes()
+
+
+def _tesseract_error(page_number: int, output: bytes | str | None) -> PdfStudioError:
+    text = output.decode("utf-8", errors="replace") if isinstance(output, bytes) else (output or "")
+    missing = re.search(r"Failed loading language '([^']+)'", text)
+    if missing:
+        return PdfStudioError(
+            f"Tesseract could not load the OCR language '{missing.group(1)}'. "
+            "Check that its data file is installed in the tessdata folder."
+        )
+    detail = _last_line(text)
+    return PdfStudioError(f"Tesseract could not read page {page_number}." + (f" {detail}" if detail else ""))
 
 
 def pdf_has_text(path: Path, password: str | None = None) -> bool:
