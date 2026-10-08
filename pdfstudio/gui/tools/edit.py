@@ -124,7 +124,8 @@ class PageNumbersTool(Tool):
         form.addRow("Format", self._format)
         form.addRow("Font size", self._font_size)
         form.addRow("Pages (optional)", self._pages)
-        return panel(form, hint("Example for pages: 1-3, 5. Leave empty to number every page."), stretch=True)
+        self._panel = panel(form, hint("Example for pages: 1-3, 5. Leave empty to number every page."), stretch=True)
+        return self._panel
 
     def collect_options(self) -> dict:
         return {
@@ -200,7 +201,10 @@ class WatermarkTool(Tool):
         form.addRow("Rotation", self._rotation)
         form.addRow("Color", self._color)
         form.addRow("Pages (optional)", self._pages)
-        return panel(form, hint("Example for pages: 1-3, 5. Leave empty to add the watermark to every page."), stretch=True)
+        self._panel = panel(
+            form, hint("Example for pages: 1-3, 5. Leave empty to add the watermark to every page."), stretch=True
+        )
+        return self._panel
 
     def collect_options(self) -> dict:
         return {

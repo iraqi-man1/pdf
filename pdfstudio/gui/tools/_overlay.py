@@ -150,8 +150,9 @@ class CanvasTool(Tool):
         self._entries: list[Placed] = []
         self._page_sizes: list[tuple[float, float]] = []
         self._canvas: PageCanvas | None = None
+        self._editor: QWidget | None = None  # keeps the editor alive; the tool holds its children
         self._editor_notice: QLabel | None = None
-        self._panel: QWidget | None = None
+        self._panel: QWidget | None = None  # keeps the options alive; the tool holds its children
         self._note: QLabel | None = None
         self._width: QSlider | None = None
         self._preview: QLabel | None = None
@@ -164,8 +165,8 @@ class CanvasTool(Tool):
     # ----- UI building blocks (call from build_options / build_editor)
 
     def build_editor(self) -> QWidget:
-        holder = QWidget()
-        layout = QVBoxLayout(holder)
+        self._editor = QWidget()
+        layout = QVBoxLayout(self._editor)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(8)
         self._editor_notice = QLabel("")
@@ -178,7 +179,7 @@ class CanvasTool(Tool):
         self._canvas.rect_drawn.connect(self._on_rect)
         layout.addWidget(self._editor_notice)
         layout.addWidget(self._canvas, 1)
-        return holder
+        return self._editor
 
     def make_note(self) -> QLabel:
         """Small line under the controls for messages such as 'Removed the last text'."""
