@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QEvent, Qt, Signal
 from PySide6.QtWidgets import (
     QFrame,
     QGridLayout,
@@ -138,6 +138,7 @@ class HomePage(QWidget):
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
         scroll.setWidget(content)
+        scroll.viewport().installEventFilter(self)
         self._scroll = scroll
 
         layout = QVBoxLayout(self)
@@ -151,6 +152,12 @@ class HomePage(QWidget):
     def resizeEvent(self, event) -> None:  # noqa: N802
         super().resizeEvent(event)
         self._relayout()
+
+    def eventFilter(self, watched, event) -> bool:  # noqa: N802
+        # The scroll viewport gets its final width after this page is first shown, so re-flow when it changes.
+        if watched is self._scroll.viewport() and event.type() == QEvent.Type.Resize:
+            self._relayout()
+        return super().eventFilter(watched, event)
 
     def _relayout(self) -> None:
         available = self._scroll.viewport().width() if self._scroll.viewport() else self.width()

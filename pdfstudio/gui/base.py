@@ -227,6 +227,7 @@ class ToolPage(QWidget):
         self._options_widget = tool.build_options()
         if self._options_widget is not None:
             scroll = QScrollArea()
+            scroll.setObjectName("optionsScroll")
             scroll.setWidgetResizable(True)
             scroll.setFrameShape(QFrame.Shape.NoFrame)
             scroll.setWidget(self._options_widget)
@@ -333,7 +334,7 @@ class ToolPage(QWidget):
     def _on_files_changed(self) -> None:
         files = self._files.files()
         self._tool.on_files_changed(files)
-        self._run.setEnabled(not self.is_busy() and len(files) >= self._tool.min_files)
+        self._run.setEnabled(not self.is_busy())
         self._result.hide()
 
     def _refresh_banner(self) -> None:

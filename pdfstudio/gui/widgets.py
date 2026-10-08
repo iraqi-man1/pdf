@@ -69,11 +69,22 @@ class ToolBadge(QLabel):
 class ElidedLabel(QLabel):
     """Label that shortens long text in the middle with an ellipsis."""
 
+    MAX_PREFERRED_WIDTH = 420
+
     def __init__(self, text: str = "", parent=None) -> None:
         super().__init__(parent)
         self._full = ""
-        self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         self.set_full_text(text)
+
+    def minimumSizeHint(self) -> QSize:  # noqa: N802 - Qt naming
+        # Never ask the layout for the full text width, so long paths shorten instead of pushing siblings off screen.
+        return QSize(40, QFontMetrics(self.font()).height())
+
+    def sizeHint(self) -> QSize:  # noqa: N802 - Qt naming
+        metrics = QFontMetrics(self.font())
+        width = min(metrics.horizontalAdvance(self._full), self.MAX_PREFERRED_WIDTH)
+        return QSize(width, metrics.height())
 
     def set_full_text(self, text: str) -> None:
         self._full = text
@@ -886,7 +897,27 @@ class OrganizeGrid(QWidget):
                 pixmap = original.transformed(transform, Qt.TransformationMode.SmoothTransformation)
             else:
                 pixmap = original
-            item.setIcon(QIcon(pixmap))
+            item.setIcon(QIcon(self._framed(pixmap)))
+
+    def _framed(self, pixmap: QPixmap) -> QPixmap:
+        """Center the page on a tile with a visible edge, so white pages stand out on the white list."""
+        tile = self._list.iconSize()
+        canvas = QPixmap(tile)
+        canvas.fill(QColor(theme.SURFACE_ALT))
+        scaled = pixmap.scaled(
+            tile - QSize(16, 16),
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+        x = (tile.width() - scaled.width()) // 2
+        y = (tile.height() - scaled.height()) // 2
+        painter = QPainter(canvas)
+        painter.setPen(QPen(QColor(theme.BORDER_STRONG), 1))
+        painter.setBrush(QColor("#FFFFFF"))
+        painter.drawRect(QRectF(x - 0.5, y - 0.5, scaled.width() + 1, scaled.height() + 1))
+        painter.drawPixmap(x, y, scaled)
+        painter.end()
+        return canvas
 
     def _update_buttons(self) -> None:
         has_selection = bool(self._list.selectedItems())

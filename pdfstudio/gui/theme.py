@@ -45,6 +45,9 @@ def build_stylesheet() -> str:
     QWidget#root, QStackedWidget, QScrollArea#pageScroll, QScrollArea#pageScroll > QWidget > QWidget {{
         background: {BACKGROUND};
     }}
+    QScrollArea#optionsScroll > QWidget, QScrollArea#optionsScroll > QWidget > QWidget {{
+        background: transparent;
+    }}
     QWidget {{ font-size: 10pt; }}
     QLabel#appTitle {{ font-size: 15pt; font-weight: 700; }}
     QLabel#pageTitle {{ font-size: 18pt; font-weight: 700; }}
